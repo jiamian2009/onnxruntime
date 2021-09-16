@@ -1,0 +1,86 @@
+name: onnxruntime
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "version tag"
+        required: true
+        default: "v1.6.0"
+
+jobs:
+  init:
+    runs-on: windows-latest
+    outputs:
+      output1: "${{ steps.create_release.outputs.upload_url }}"
+    steps:
+      - name: Create tag
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/${{ github.event.inputs.tag }}",
+              sha: context.sha
+            })
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          release_name: onnxruntime-${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
+
+  build:
+    needs: init
+    strategy:
+      matrix:
+        build_type: ["Debug", "Release"]
+        arch: ["x86", "x64"]
+
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Install Server-Media-Foundation
+        shell: powershell
+        run: |
+          Install-WindowsFeature Server-Media-Foundation
+
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      - name: Build Onnxruntime
+        shell: cmd
+        run: |
+          git clone -b ${{ github.event.inputs.tag }} --recursive https://github.com/Microsoft/onnxruntime
+          cd onnxruntime
+          ..\build_onnx.bat ${{matrix.build_type}} ${{matrix.arch}}
+          ls
+
+      - name: Compress Package
+        run: |
+          Xcopy .\onnxruntime\build\Windows\${{matrix.build_type}}\${{matrix.build_type}}\onnxruntime.* .\install\lib /H/C/I
+          del /q .\install\lib\onnxruntime.ilk .\install\lib\onnxruntime.exp
+          Xcopy .\onnxruntime\include\onnxruntime\core\session .\install\include\onnxruntime /H/C/I
+          7z a onnxruntime.zip ./install/* -r
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.init.outputs.output1 }}
+          asset_path: onnxruntime.zip
+          asset_name: onnxruntime-${{ github.event.inputs.tag }}-${{matrix.build_type}}-${{matrix.arch}}.zip
+          asset_content_type: application/zip
