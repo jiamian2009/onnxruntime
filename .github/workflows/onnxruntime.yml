@@ -70,8 +70,7 @@ jobs:
       - name: Compress Package
         run: |
           Xcopy .\onnxruntime\build\Windows\${{matrix.build_type}}\${{matrix.build_type}}\onnxruntime.* .\install\lib /H/C/I
-          if exist .\install\lib\onnxruntime.ilk (del /q .\install\lib\onnxruntime.ilk)
-          if exist .\install\lib\onnxruntime.exp (del /q .\install\lib\onnxruntime.exp)
+          .\clean_files.bat
           Xcopy .\onnxruntime\include\onnxruntime\core\session .\install\include\onnxruntime /H/C/I
           7z a onnxruntime.zip ./install/* -r
 
