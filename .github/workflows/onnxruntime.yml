@@ -122,8 +122,10 @@ jobs:
 
           cp -r ./onnxruntime/build/Linux/${{matrix.build_type}}/libonnxruntime.so* ./install/lib
           cp -r ./onnxruntime/include/onnxruntime/core/session/* ./install/include/onnxruntime
-
-          zip -r ${{ env.package_name }}-${{ env.version }}.zip ./install/*
+          cd ./install
+          zip -r ${{ env.package_name }}-${{ env.version }}.zip ./*
+          cd ..
+          mv ./install/${{ env.package_name }}-${{ env.version }}.zip .
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
