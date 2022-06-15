@@ -120,7 +120,7 @@ jobs:
           mkdir -p ./install/lib
           mkdir -p ./install/include/onnxruntime
 
-          cp -r ./onnxruntime/build/Linux/${{matrix.build_type}}/libonnxruntime.so* ./install/lib
+          cp -r ./onnxruntime/build/Linux/${{matrix.build_type}}/libonnxruntime.so ./install/lib
           cp -r ./onnxruntime/include/onnxruntime/core/session/* ./install/include/onnxruntime
           cd ./install
           zip -r ${{ env.package_name }}-${{ env.version }}.zip ./*
