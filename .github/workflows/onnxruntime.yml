@@ -109,7 +109,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: Build Onnxruntime
-        shell: cmd
+        shell: shell
         run: |
           git clone -b ${{ github.event.inputs.tag }} --recursive https://github.com/Microsoft/onnxruntime
           cd onnxruntime
